@@ -1,4 +1,4 @@
-const C="auction-sim-v4";
+const C="auction-sim-v7";
 
 self.addEventListener("install", event => {
   self.skipWaiting();

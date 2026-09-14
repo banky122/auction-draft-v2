@@ -43,3 +43,18 @@ Hybrid AI Judge version:
 - The judge explicitly evaluates chemistry, fit, positional balance, size, spacing, defense, and matchup-specific factors for basketball.
 - Other categories use category-specific criteria.
 - AI judging has its own ~22 second timeout and concise output limits.
+
+
+Fixed pool size version:
+- Pool size is fixed at 35 nominees for every draft.
+- The pool-size input has been removed from the UI.
+- Generation still runs in batches of up to 10 nominees to avoid timeouts.
+
+
+Simplified setup version:
+- Removed Extra Rules / Eligibility from the UI.
+- Draft setup now uses category only, with a fixed 35-person pool.
+
+
+Pool size update:
+- Fixed nomination pool reduced from 35 to 25 for every draft.

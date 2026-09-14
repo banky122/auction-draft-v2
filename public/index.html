@@ -41,11 +41,11 @@ button.primary{background:var(--accentbg);border-color:var(--accent)}button:disa
       <input id="category" placeholder="e.g. All-Time Sitcoms" value="All-Time Sitcoms">
     </label>
     <label class="small">Pool size
-      <input id="poolSize" type="number" min="10" max="80" value="35">
+      
     </label>
   </div>
   <label style="margin-top:9px">Extra rules / eligibility
-    <input id="rules" placeholder="e.g. Live-action only, any era">
+    
   </label>
   <button id="generate" class="primary wide" style="margin-top:10px">✨ Generate Draft Pool</button>
   <div id="generateMsg" class="msg"></div>
@@ -134,7 +134,7 @@ button.primary{background:var(--accentbg);border-color:var(--accent)}button:disa
 <section class="card"><button id="reset" class="wide">Reset Entire Draft</button></section>
 
 <script>
-const KEY="aiAuctionDraftSimulator_v3";
+const KEY="aiAuctionDraftSimulator_v6";
 let state={
  p1:[],p2:[],history:[],pool:[],poolIndex:0,nomination:1,
  auction:{active:false,currentBid:0,leader:null,playerPassed:false,cpuPassed:false}
@@ -210,8 +210,8 @@ function awardTo(p,cost){
 function canDraft(p){return state[p].length<rosterSize()}
 
 $("generate").onclick=async()=>{
- const category=$("category").value.trim(),rules=$("rules").value.trim();
- const target=Math.max(10,Math.min(80,Number($("poolSize").value)||35));
+ const category=$("category").value.trim(),rules="";
+ const target=25;
  if(!category){$("generateMsg").textContent="Enter a category first.";return}
  $("generate").disabled=true;$("generate").textContent="Generating…";
  $("generateMsg").textContent=`Generating 0/${target} nominees…`;
@@ -335,7 +335,7 @@ $("judge").onclick=async()=>{
  const n1=$("p1name").value||"Player 1";
  const n2=$("p2name").value||"Player 2";
  const category=$("category").value.trim();
- const rules=$("rules").value.trim();
+ const rules="";
 
  $("judge").disabled=true;
  $("judge").textContent="Judging…";
