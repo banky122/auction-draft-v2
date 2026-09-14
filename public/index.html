@@ -9,27 +9,31 @@
 <link rel="manifest" href="/manifest.json">
 <title>AI Auction Draft</title>
 <style>
-:root{--bg:#0f1115;--card:#1b1f27;--panel:#14171d;--border:#323947;--text:#f6f7fb;--muted:#a7afbd;--accent:#809dff;--accentbg:#25345f;--good:#6ee7a7}
-*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,-apple-system,sans-serif;padding-bottom:calc(24px + env(safe-area-inset-bottom))}
+:root{--bg:#0f1115;--card:#1b1f27;--panel:#14171d;--border:#323947;--text:#f6f7fb;--muted:#a7afbd;--accent:#809dff;--accentbg:#25345f;--good:#6ee7a7;--warn:#f8cc71}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,-apple-system,sans-serif;padding-bottom:calc(24px + env(safe-area-inset-bottom))}
 main{max-width:760px;margin:auto;padding:calc(16px + env(safe-area-inset-top)) 11px 26px}
-h1{margin:0;font-size:24px}.sub{color:var(--muted);font-size:13px;margin:5px 0 15px}.card{background:var(--card);border:1px solid var(--border);border-radius:17px;padding:13px;margin-top:11px}
+h1{margin:0;font-size:24px}.sub{color:var(--muted);font-size:13px;margin:5px 0 15px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:17px;padding:13px;margin-top:11px}
 .row{display:flex;gap:9px;flex-wrap:wrap;align-items:end}.grow{flex:1 1 180px}.small{flex:0 1 120px}
 label{display:block;color:var(--muted);font-size:12px;font-weight:650}input,select,button{font:inherit}
 input,select{width:100%;min-height:46px;margin-top:6px;padding:11px 12px;border-radius:12px;border:1px solid var(--border);background:var(--panel);color:var(--text)}
 button{min-height:46px;padding:11px 14px;border-radius:12px;border:1px solid var(--border);background:var(--panel);color:var(--text);font-weight:750;cursor:pointer}
-.primary{background:var(--accentbg);border-color:var(--accent)}.wide{width:100%}.grid2{display:grid;grid-template-columns:1fr 1fr;gap:11px}
-.pill{font-size:11px;border:1px solid var(--border);border-radius:999px;padding:5px 8px;color:var(--muted);white-space:nowrap}
-.titleRow{display:flex;justify-content:space-between;align-items:center;gap:8px}.muted{color:var(--muted)}
+button.primary{background:var(--accentbg);border-color:var(--accent)}button:disabled{opacity:.5;cursor:not-allowed}.wide{width:100%}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:11px}.pill{font-size:11px;border:1px solid var(--border);border-radius:999px;padding:5px 8px;color:var(--muted);white-space:nowrap}
+.titleRow{display:flex;justify-content:space-between;align-items:center;gap:8px}.muted{color:var(--muted)}.good{color:var(--good)}.warn{color:var(--warn)}
 .rosterRow,.histRow{display:flex;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px solid var(--border);font-size:14px}
 .nominee{font-size:25px;font-weight:850;margin-top:7px}.desc{color:var(--muted);line-height:1.45;margin-top:6px;font-size:14px}
-.actions{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:10px}.msg{min-height:20px;color:var(--muted);font-size:13px;margin-top:10px}
-.good{color:var(--good)}.hide{display:none}.count{font-size:12px;color:var(--muted)}
-@media(max-width:560px){.grid2{grid-template-columns:1fr}.nominee{font-size:22px}}
+.actions{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:10px}.actions3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:9px;margin-top:10px}
+.msg{min-height:20px;color:var(--muted);font-size:13px;margin-top:10px}.hide{display:none}.count{font-size:12px;color:var(--muted)}
+.cpuBox{border:1px solid var(--border);border-radius:14px;padding:11px;margin-top:10px;background:var(--panel)}
+.resultBox{white-space:pre-wrap;line-height:1.45;color:var(--text);font-size:14px}
+@media(max-width:560px){.grid2{grid-template-columns:1fr}.nominee{font-size:22px}.actions3{grid-template-columns:1fr}}
 </style>
 </head>
 <body><main>
 <h1>🏆 AI Auction Draft</h1>
-<div class="sub">Enter any category. The app creates the draft pool and runs the nominations for you.</div>
+<div class="sub">Generate any category, play a friend, battle the CPU, or simulate the whole draft.</div>
 
 <section class="card">
   <div class="row">
@@ -40,17 +44,31 @@ button{min-height:46px;padding:11px 14px;border-radius:12px;border:1px solid var
       <input id="poolSize" type="number" min="12" max="80" value="35">
     </label>
   </div>
-  <div class="row" style="margin-top:9px">
-    <label class="grow">Extra rules / eligibility
-      <input id="rules" placeholder="e.g. Live-action only, any era">
-    </label>
-  </div>
+  <label style="margin-top:9px">Extra rules / eligibility
+    <input id="rules" placeholder="e.g. Live-action only, any era">
+  </label>
   <button id="generate" class="primary wide" style="margin-top:10px">✨ Generate Draft Pool</button>
   <div id="generateMsg" class="msg"></div>
 </section>
 
 <section class="card">
  <div class="row">
+  <label class="grow">Mode
+    <select id="mode">
+      <option value="friend">Play vs Friend</option>
+      <option value="cpu">Play vs CPU</option>
+      <option value="auto">Simulate Entire Draft</option>
+    </select>
+  </label>
+  <label class="grow">CPU style
+    <select id="cpuStyle">
+      <option value="balanced">Balanced</option>
+      <option value="aggressive">Aggressive</option>
+      <option value="conservative">Conservative</option>
+    </select>
+  </label>
+ </div>
+ <div class="row" style="margin-top:9px">
   <label class="grow">Player 1<input id="p1name" value="Bankole"></label>
   <label class="grow">Player 2<input id="p2name" value="Max"></label>
   <label class="small">Budget<input id="budget" type="number" min="0" step="0.5" value="25"></label>
@@ -66,16 +84,46 @@ button{min-height:46px;padding:11px 14px;border-radius:12px;border:1px solid var
 <section class="card">
  <div class="titleRow"><strong>Nomination <span id="nominationNo">#1</span></strong><span id="poolCount" class="count">No pool generated</span></div>
  <div id="emptyNominee" class="muted" style="margin-top:12px">Generate a pool to begin.</div>
+
  <div id="nominationBox" class="hide">
    <div id="nominee" class="nominee"></div>
    <div id="desc" class="desc"></div>
-   <div class="row" style="margin-top:12px">
-    <label class="grow">Winner<select id="winner"><option value="p1">Bankole</option><option value="p2">Max</option></select></label>
-    <label class="small">Winning bid<input id="bid" type="number" min="0" step="0.5" value="0"></label>
+
+   <div id="friendControls">
+    <div class="row" style="margin-top:12px">
+      <label class="grow">Winner<select id="winner"><option value="p1">Bankole</option><option value="p2">Max</option></select></label>
+      <label class="small">Winning bid<input id="bid" type="number" min="0" step="0.5" value="0"></label>
+    </div>
+    <div class="actions"><button id="award" class="primary">Award Pick</button><button id="skip">Skip</button></div>
    </div>
-   <div class="actions"><button id="award" class="primary">Award Pick</button><button id="skip">Skip</button></div>
+
+   <div id="cpuControls" class="hide">
+    <div class="cpuBox">
+      <div class="muted" style="font-size:12px">Current auction</div>
+      <div id="cpuAuctionText" style="font-weight:750;margin-top:4px">Waiting for your opening bid.</div>
+    </div>
+    <div class="row" style="margin-top:10px">
+      <label class="grow">Your bid<input id="playerBid" type="number" min="0" step="0.5" value="1"></label>
+    </div>
+    <div class="actions3">
+      <button id="submitBid" class="primary">Place Bid</button>
+      <button id="passCpu">Pass</button>
+      <button id="skipCpu">Skip Nominee</button>
+    </div>
+   </div>
+
+   <div id="autoControls" class="hide">
+     <button id="simulateStep" class="primary wide" style="margin-top:10px">Simulate This Nomination</button>
+     <button id="simulateAll" class="wide" style="margin-top:8px">⚡ Simulate Rest of Draft</button>
+   </div>
  </div>
  <div id="draftMsg" class="msg"></div>
+</section>
+
+<section class="card">
+ <div class="titleRow"><strong>Draft Result</strong><button id="judge" class="primary">🤖 Simulate Winner</button></div>
+ <div id="judgeMsg" class="msg">Fill both rosters, then simulate the matchup.</div>
+ <div id="judgeResult" class="resultBox"></div>
 </section>
 
 <section class="card">
@@ -83,13 +131,14 @@ button{min-height:46px;padding:11px 14px;border-radius:12px;border:1px solid var
  <div id="history"></div>
 </section>
 
-<section class="card">
- <button id="reset" class="wide">Reset Entire Draft</button>
-</section>
+<section class="card"><button id="reset" class="wide">Reset Entire Draft</button></section>
 
 <script>
-const KEY="aiAuctionDraft_v2";
-let state={p1:[],p2:[],history:[],pool:[],poolIndex:0,nomination:1,category:"",rules:""};
+const KEY="aiAuctionDraftSimulator_v1";
+let state={
+ p1:[],p2:[],history:[],pool:[],poolIndex:0,nomination:1,
+ auction:{active:false,currentBid:0,leader:null,playerPassed:false,cpuPassed:false}
+};
 let snapshots=[];
 const $=id=>document.getElementById(id);
 const esc=s=>String(s).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
@@ -98,50 +147,165 @@ const budget=()=>Math.max(0,Number($("budget").value)||0);
 const rosterSize=()=>Math.max(1,Number($("rosterSize").value)||5);
 const spent=p=>state[p].reduce((s,x)=>s+Number(x.cost),0);
 const remain=p=>Math.max(0,budget()-spent(p));
+const current=()=>state.pool[state.poolIndex]||null;
 function snapshot(){snapshots.push(JSON.stringify(state));if(snapshots.length>100)snapshots.shift()}
 function save(){localStorage.setItem(KEY,JSON.stringify(state))}
-function current(){return state.pool[state.poolIndex]||null}
-function nextNomination(){state.poolIndex++;state.nomination++}
+function resetAuction(){state.auction={active:false,currentBid:0,leader:null,playerPassed:false,cpuPassed:false}}
+function advance(){state.poolIndex++;state.nomination++;resetAuction()}
 function renderRoster(p,id,status){
- let el=$(id); el.innerHTML=state[p].length?state[p].map((x,i)=>`<div class="rosterRow"><span>${i+1}. ${esc(x.name)}</span><span class="pill">${money(x.cost)}</span></div>`).join(""):'<div class="muted" style="font-size:13px;margin-top:10px">No picks yet.</div>';
+ const el=$(id);
+ el.innerHTML=state[p].length?state[p].map((x,i)=>`<div class="rosterRow"><span>${i+1}. ${esc(x.name)}</span><span class="pill">${money(x.cost)}</span></div>`).join(""):'<div class="muted" style="font-size:13px;margin-top:10px">No picks yet.</div>';
  $(status).textContent=`${money(remain(p))} left • ${state[p].length}/${rosterSize()}`;
 }
+function cpuMaxFor(item,p="p2"){
+ const value=Math.max(1,Math.min(100,Number(item?.value)||50));
+ const style=$("cpuStyle").value;
+ const styleFactor=style==="aggressive"?1.18:style==="conservative"?0.83:1;
+ const spotsLeft=Math.max(1,rosterSize()-state[p].length);
+ const budgetLeft=remain(p);
+ const avgAffordable=budgetLeft/spotsLeft;
+ const qualityFactor=0.35+(value/100)*1.15;
+ const lateFactor=spotsLeft<=2?1.18:1;
+ const jitter=0.88+Math.random()*0.24;
+ return Math.max(0,Math.min(budgetLeft,Math.round(avgAffordable*qualityFactor*styleFactor*lateFactor*jitter*2)/2));
+}
 function render(){
- $("p1title").textContent=$("p1name").value||"Player 1"; $("p2title").textContent=$("p2name").value||"Player 2";
- $("winner").options[0].textContent=$("p1name").value||"Player 1"; $("winner").options[1].textContent=$("p2name").value||"Player 2";
+ const mode=$("mode").value;
+ $("p1title").textContent=$("p1name").value||"Player 1";$("p2title").textContent=$("p2name").value||"Player 2";
+ $("winner").options[0].textContent=$("p1name").value||"Player 1";$("winner").options[1].textContent=$("p2name").value||"Player 2";
  $("nominationNo").textContent="#"+state.nomination;
  renderRoster("p1","p1roster","p1status");renderRoster("p2","p2roster","p2status");
  const c=current();
- if(c){$("emptyNominee").classList.add("hide");$("nominationBox").classList.remove("hide");$("nominee").textContent=c.name;$("desc").textContent=c.description||"";}
- else{$("emptyNominee").classList.remove("hide");$("nominationBox").classList.add("hide");$("emptyNominee").textContent=state.pool.length?"Draft pool exhausted.":"Generate a pool to begin."}
+ if(c){
+  $("emptyNominee").classList.add("hide");$("nominationBox").classList.remove("hide");
+  $("nominee").textContent=c.name;$("desc").textContent=c.description||"";
+ }else{
+  $("emptyNominee").classList.remove("hide");$("nominationBox").classList.add("hide");
+  $("emptyNominee").textContent=state.pool.length?"Draft pool exhausted.":"Generate a pool to begin.";
+ }
+ $("friendControls").classList.toggle("hide",mode!=="friend");
+ $("cpuControls").classList.toggle("hide",mode!=="cpu");
+ $("autoControls").classList.toggle("hide",mode!=="auto");
  $("poolCount").textContent=state.pool.length?`${Math.max(0,state.pool.length-state.poolIndex)} nominees remaining`:"No pool generated";
  $("history").innerHTML=state.history.length?state.history.slice().reverse().map(h=>`<div class="histRow"><span>${esc(h)}</span></div>`).join(""):'<div class="muted" style="font-size:13px;margin-top:10px">No activity yet.</div>';
+ if(mode==="cpu"){
+   const a=state.auction;
+   const t=!a.active?"Waiting for your opening bid."
+    :a.leader==="p1"?`You lead at ${money(a.currentBid)}. CPU is deciding…`
+    :a.leader==="p2"?`CPU leads at ${money(a.currentBid)}. Raise or pass.`
+    :"Auction started.";
+   $("cpuAuctionText").textContent=t;
+ }
+ $("judge").disabled=!(state.p1.length===rosterSize()&&state.p2.length===rosterSize());
  save();
 }
+function awardTo(p,cost){
+ const c=current();if(!c)return;
+ const who=p==="p1"?($("p1name").value||"Player 1"):($("p2name").value||"Player 2");
+ state[p].push({name:c.name,cost});
+ state.history.push(`${who}: ${c.name} for ${money(cost)}`);
+ $("draftMsg").textContent=`${c.name} → ${who} for ${money(cost)}`;
+ advance();render();
+}
+function canDraft(p){return state[p].length<rosterSize()}
+
 $("generate").onclick=async()=>{
- const category=$("category").value.trim(), rules=$("rules").value.trim(), count=Math.max(12,Math.min(80,Number($("poolSize").value)||35));
+ const category=$("category").value.trim(),rules=$("rules").value.trim(),count=Math.max(12,Math.min(80,Number($("poolSize").value)||35));
  if(!category){$("generateMsg").textContent="Enter a category first.";return}
- $("generate").disabled=true;$("generate").textContent="Generating…";$("generateMsg").textContent="Creating a balanced, mixed-order pool…";
+ $("generate").disabled=true;$("generate").textContent="Generating…";$("generateMsg").textContent="Creating a mixed nomination pool with hidden CPU values…";
  try{
   const r=await fetch("/api/generate",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({category,rules,count})});
-  const data=await r.json();
-  if(!r.ok) throw new Error(data.error||"Generation failed");
-  snapshot();state.pool=data.items;state.poolIndex=0;state.nomination=1;state.category=category;state.rules=rules;state.p1=[];state.p2=[];state.history=[];
-  $("generateMsg").textContent=`Generated ${data.items.length} nominees for ${category}.`;render();
+  const data=await r.json();if(!r.ok)throw new Error(data.error||"Generation failed");
+  snapshot();state.p1=[];state.p2=[];state.history=[];state.pool=data.items;state.poolIndex=0;state.nomination=1;resetAuction();
+  $("generateMsg").textContent=`Generated ${data.items.length} nominees.`;render();
  }catch(e){$("generateMsg").textContent="Could not generate: "+e.message}
  finally{$("generate").disabled=false;$("generate").textContent="✨ Generate Draft Pool"}
 };
+
 $("award").onclick=()=>{
  const c=current(),p=$("winner").value,bid=Math.max(0,Number($("bid").value)||0);
- if(!c)return;if(state[p].length>=rosterSize()){$("draftMsg").textContent="That roster is already full.";return}
+ if(!c)return;if(!canDraft(p)){$("draftMsg").textContent="That roster is full.";return}
  if(bid>remain(p)){$("draftMsg").textContent=`Maximum bid is ${money(remain(p))}.`;return}
- snapshot();const who=p==="p1"?($("p1name").value||"Player 1"):($("p2name").value||"Player 2");
- state[p].push({name:c.name,cost:bid});state.history.push(`${who}: ${c.name} for ${money(bid)}`);$("draftMsg").textContent=`${c.name} → ${who} for ${money(bid)}`;$("bid").value=0;nextNomination();render();
+ snapshot();awardTo(p,bid);
 };
-$("skip").onclick=()=>{const c=current();if(!c)return;snapshot();state.history.push(`Skipped: ${c.name}`);$("draftMsg").textContent=`Skipped ${c.name}`;nextNomination();render()};
+$("skip").onclick=()=>{const c=current();if(!c)return;snapshot();state.history.push(`Skipped: ${c.name}`);$("draftMsg").textContent=`Skipped ${c.name}`;advance();render()};
+
+$("submitBid").onclick=()=>{
+ const c=current();if(!c)return;
+ if(!canDraft("p1")){$("draftMsg").textContent="Your roster is already full.";return}
+ let bid=Math.max(0,Number($("playerBid").value)||0);
+ if(bid>remain("p1")){$("draftMsg").textContent=`Your maximum bid is ${money(remain("p1"))}.`;return}
+ if(state.auction.active && bid<=state.auction.currentBid){$("draftMsg").textContent=`Bid must exceed ${money(state.auction.currentBid)}.`;return}
+ snapshot();
+ state.auction.active=true;state.auction.currentBid=bid;state.auction.leader="p1";state.auction.playerPassed=false;
+ if(!canDraft("p2")){awardTo("p1",bid);return}
+ const cpuMax=cpuMaxFor(c,"p2");
+ const increment=bid<5?0.5:1;
+ const cpuBid=Math.round((bid+increment)*2)/2;
+ if(cpuBid<=cpuMax && cpuBid<=remain("p2")){
+   state.auction.currentBid=cpuBid;state.auction.leader="p2";
+   $("draftMsg").textContent=`CPU raises to ${money(cpuBid)}.`;
+   $("playerBid").value=Math.min(remain("p1"),cpuBid+increment);
+   render();
+ }else{
+   awardTo("p1",bid);
+ }
+};
+$("passCpu").onclick=()=>{
+ const c=current();if(!c)return;
+ snapshot();
+ if(!state.auction.active){
+   const cpuMax=cpuMaxFor(c,"p2");
+   if(canDraft("p2")&&cpuMax>=0){
+     awardTo("p2",0);
+   }else{
+     state.history.push(`Skipped: ${c.name}`);advance();render();
+   }
+   return;
+ }
+ if(state.auction.leader==="p2"){awardTo("p2",state.auction.currentBid)}
+ else if(state.auction.leader==="p1"){awardTo("p1",state.auction.currentBid)}
+};
+$("skipCpu").onclick=()=>{const c=current();if(!c)return;snapshot();state.history.push(`Skipped: ${c.name}`);$("draftMsg").textContent=`Skipped ${c.name}`;advance();render()};
+
+function simulateOne(){
+ const c=current();if(!c)return false;
+ const p1ok=canDraft("p1"),p2ok=canDraft("p2");
+ if(!p1ok&&!p2ok)return false;
+ const m1=p1ok?cpuMaxFor(c,"p1"):-1,m2=p2ok?cpuMaxFor(c,"p2"):-1;
+ if(m1<0&&m2<0){state.history.push(`Skipped: ${c.name}`);advance();return true}
+ const winner=m1>=m2?"p1":"p2";
+ const loserMax=winner==="p1"?m2:m1;
+ const winMax=winner==="p1"?m1:m2;
+ let price=Math.max(0,Math.min(winMax,loserMax<0?0:Math.round((loserMax+0.5)*2)/2));
+ if(price>remain(winner))price=remain(winner);
+ awardTo(winner,price);
+ return true;
+}
+$("simulateStep").onclick=()=>{snapshot();simulateOne();render()};
+$("simulateAll").onclick=()=>{
+ snapshot();let safety=0;
+ while(current()&&safety<1000&&(canDraft("p1")||canDraft("p2"))){simulateOne();safety++}
+ render();$("draftMsg").textContent="Draft simulation complete.";
+};
+
+$("judge").onclick=async()=>{
+ if(!(state.p1.length===rosterSize()&&state.p2.length===rosterSize()))return;
+ $("judge").disabled=true;$("judgeMsg").textContent="Simulating matchup…";$("judgeResult").textContent="";
+ try{
+  const r=await fetch("/api/judge",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({
+   category:$("category").value,rules:$("rules").value,
+   p1name:$("p1name").value,p2name:$("p2name").value,p1:state.p1,p2:state.p2
+  })});
+  const data=await r.json();if(!r.ok)throw new Error(data.error||"Judging failed");
+  $("judgeMsg").textContent="Simulation complete.";$("judgeResult").textContent=data.result||"No result returned.";
+ }catch(e){$("judgeMsg").textContent="Could not simulate: "+e.message}
+ finally{$("judge").disabled=false}
+};
+
 $("undo").onclick=()=>{if(!snapshots.length){$("draftMsg").textContent="Nothing to undo.";return}state=JSON.parse(snapshots.pop());render();$("draftMsg").textContent="Last action undone."};
-$("reset").onclick=()=>{if(!confirm("Reset the entire draft?"))return;state={p1:[],p2:[],history:[],pool:[],poolIndex:0,nomination:1,category:"",rules:""};snapshots=[];render()};
-["p1name","p2name","budget","rosterSize"].forEach(id=>$(id).addEventListener("input",render));
+$("reset").onclick=()=>{if(!confirm("Reset the entire draft?"))return;state={p1:[],p2:[],history:[],pool:[],poolIndex:0,nomination:1,auction:{active:false,currentBid:0,leader:null,playerPassed:false,cpuPassed:false}};snapshots=[];$("judgeResult").textContent="";render()};
+["p1name","p2name","budget","rosterSize","mode","cpuStyle"].forEach(id=>$(id).addEventListener("input",render));
 try{const saved=localStorage.getItem(KEY);if(saved)state={...state,...JSON.parse(saved)}}catch{}
 render();
 if("serviceWorker"in navigator)window.addEventListener("load",()=>navigator.serviceWorker.register("/sw.js").catch(()=>{}));
