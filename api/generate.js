@@ -32,7 +32,7 @@ Output ONLY valid JSON:
         "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`,
         "Content-Type": "application/json"
       },
-      body: JSON.stringify({ model: "gpt-5", input: prompt })
+      body: JSON.stringify({ model: "gpt-5.6-luna", input: prompt })
     });
     const data = await response.json();
     if (!response.ok) return res.status(response.status).json({ error: data?.error?.message || "OpenAI request failed" });

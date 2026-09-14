@@ -215,7 +215,7 @@ $("generate").onclick=async()=>{
  $("generate").disabled=true;$("generate").textContent="Generating…";$("generateMsg").textContent="Creating a mixed nomination pool with hidden CPU values…";
  try{
   const r=await fetch("/api/generate",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({category,rules,count})});
-  const data=await r.json();if(!r.ok)throw new Error(data.error||"Generation failed");
+  const raw=await r.text();let data;try{data=JSON.parse(raw)}catch{throw new Error(raw||`Server error (${r.status})`)}if(!r.ok)throw new Error(data.error||`Generation failed (${r.status})`);
   snapshot();state.p1=[];state.p2=[];state.history=[];state.pool=data.items;state.poolIndex=0;state.nomination=1;resetAuction();
   $("generateMsg").textContent=`Generated ${data.items.length} nominees.`;render();
  }catch(e){$("generateMsg").textContent="Could not generate: "+e.message}
@@ -297,7 +297,7 @@ $("judge").onclick=async()=>{
    category:$("category").value,rules:$("rules").value,
    p1name:$("p1name").value,p2name:$("p2name").value,p1:state.p1,p2:state.p2
   })});
-  const data=await r.json();if(!r.ok)throw new Error(data.error||"Judging failed");
+  const raw=await r.text();let data;try{data=JSON.parse(raw)}catch{throw new Error(raw||`Server error (${r.status})`)}if(!r.ok)throw new Error(data.error||`Judging failed (${r.status})`);
   $("judgeMsg").textContent="Simulation complete.";$("judgeResult").textContent=data.result||"No result returned.";
  }catch(e){$("judgeMsg").textContent="Could not simulate: "+e.message}
  finally{$("judge").disabled=false}

@@ -14,3 +14,9 @@ Deploy on the same Vercel project:
 2. Keep OPENAI_API_KEY in Vercel.
 3. Push/commit changes.
 4. Vercel should automatically redeploy.
+
+
+Fixed version:
+- Uses gpt-5.6-luna for generation and judging.
+- Vercel maxDuration increased to 300 seconds.
+- Browser error handling improved for non-JSON server errors.
