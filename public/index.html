@@ -41,7 +41,7 @@ button.primary{background:var(--accentbg);border-color:var(--accent)}button:disa
       <input id="category" placeholder="e.g. All-Time Sitcoms" value="All-Time Sitcoms">
     </label>
     <label class="small">Pool size
-      <input id="poolSize" type="number" min="12" max="80" value="35">
+      <input id="poolSize" type="number" min="10" max="80" value="35">
     </label>
   </div>
   <label style="margin-top:9px">Extra rules / eligibility
@@ -134,7 +134,7 @@ button.primary{background:var(--accentbg);border-color:var(--accent)}button:disa
 <section class="card"><button id="reset" class="wide">Reset Entire Draft</button></section>
 
 <script>
-const KEY="aiAuctionDraftSimulator_v1";
+const KEY="aiAuctionDraftSimulator_v3";
 let state={
  p1:[],p2:[],history:[],pool:[],poolIndex:0,nomination:1,
  auction:{active:false,currentBid:0,leader:null,playerPassed:false,cpuPassed:false}
@@ -202,7 +202,7 @@ function render(){
 function awardTo(p,cost){
  const c=current();if(!c)return;
  const who=p==="p1"?($("p1name").value||"Player 1"):($("p2name").value||"Player 2");
- state[p].push({name:c.name,cost});
+ state[p].push({name:c.name,cost,value:Number(c.value)||50,tier:c.tier||"solid"});
  state.history.push(`${who}: ${c.name} for ${money(cost)}`);
  $("draftMsg").textContent=`${c.name} → ${who} for ${money(cost)}`;
  advance();render();
@@ -210,16 +210,56 @@ function awardTo(p,cost){
 function canDraft(p){return state[p].length<rosterSize()}
 
 $("generate").onclick=async()=>{
- const category=$("category").value.trim(),rules=$("rules").value.trim(),count=Math.max(12,Math.min(80,Number($("poolSize").value)||35));
+ const category=$("category").value.trim(),rules=$("rules").value.trim();
+ const target=Math.max(10,Math.min(80,Number($("poolSize").value)||35));
  if(!category){$("generateMsg").textContent="Enter a category first.";return}
- $("generate").disabled=true;$("generate").textContent="Generating…";$("generateMsg").textContent="Creating a mixed nomination pool with hidden CPU values…";
+ $("generate").disabled=true;$("generate").textContent="Generating…";
+ $("generateMsg").textContent=`Generating 0/${target} nominees…`;
  try{
-  const r=await fetch("/api/generate",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({category,rules,count})});
-  const raw=await r.text();let data;try{data=JSON.parse(raw)}catch{throw new Error(raw||`Server error (${r.status})`)}if(!r.ok)throw new Error(data.error||`Generation failed (${r.status})`);
-  snapshot();state.p1=[];state.p2=[];state.history=[];state.pool=data.items;state.poolIndex=0;state.nomination=1;resetAuction();
-  $("generateMsg").textContent=`Generated ${data.items.length} nominees.`;render();
- }catch(e){$("generateMsg").textContent="Could not generate: "+e.message}
- finally{$("generate").disabled=false;$("generate").textContent="✨ Generate Draft Pool"}
+  const all=[];
+  let attempts=0;
+  while(all.length<target && attempts<12){
+   attempts++;
+   const batchSize=Math.min(10,target-all.length);
+   $("generateMsg").textContent=`Generating ${all.length}/${target} nominees…`;
+   const r=await fetch("/api/generate",{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({
+     category,
+     rules,
+     count:batchSize,
+     exclude:all.map(x=>x.name)
+    })
+   });
+   const raw=await r.text();
+   let data;
+   try{data=JSON.parse(raw)}catch{throw new Error(raw||`Server error (${r.status})`)}
+   if(!r.ok)throw new Error(data.error||`Generation failed (${r.status})`);
+   const incoming=Array.isArray(data.items)?data.items:[];
+   for(const item of incoming){
+    if(!item?.name)continue;
+    if(all.some(x=>x.name.toLowerCase()===String(item.name).toLowerCase()))continue;
+    all.push(item);
+    if(all.length>=target)break;
+   }
+   if(!incoming.length)throw new Error("AI returned an empty batch.");
+  }
+  if(all.length<target)throw new Error(`Only generated ${all.length} of ${target} nominees. Please try again.`);
+
+  // Mix the nomination order after all batches are complete.
+  for(let i=all.length-1;i>0;i--){
+   const j=Math.floor(Math.random()*(i+1));
+   [all[i],all[j]]=[all[j],all[i]];
+  }
+
+  snapshot();state.p1=[];state.p2=[];state.history=[];state.pool=all;state.poolIndex=0;state.nomination=1;resetAuction();
+  $("generateMsg").textContent=`Generated ${all.length} nominees.`;render();
+ }catch(e){
+  $("generateMsg").textContent="Could not generate: "+e.message;
+ }finally{
+  $("generate").disabled=false;$("generate").textContent="✨ Generate Draft Pool";
+ }
 };
 
 $("award").onclick=()=>{
@@ -291,16 +331,63 @@ $("simulateAll").onclick=()=>{
 
 $("judge").onclick=async()=>{
  if(!(state.p1.length===rosterSize()&&state.p2.length===rosterSize()))return;
- $("judge").disabled=true;$("judgeMsg").textContent="Simulating matchup…";$("judgeResult").textContent="";
+
+ const n1=$("p1name").value||"Player 1";
+ const n2=$("p2name").value||"Player 2";
+ const category=$("category").value.trim();
+ const rules=$("rules").value.trim();
+
+ $("judge").disabled=true;
+ $("judge").textContent="Judging…";
+ $("judgeMsg").textContent="AI is evaluating chemistry, fit, and matchup…";
+ $("judgeResult").textContent="";
+
  try{
-  const r=await fetch("/api/judge",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({
-   category:$("category").value,rules:$("rules").value,
-   p1name:$("p1name").value,p2name:$("p2name").value,p1:state.p1,p2:state.p2
-  })});
-  const raw=await r.text();let data;try{data=JSON.parse(raw)}catch{throw new Error(raw||`Server error (${r.status})`)}if(!r.ok)throw new Error(data.error||`Judging failed (${r.status})`);
-  $("judgeMsg").textContent="Simulation complete.";$("judgeResult").textContent=data.result||"No result returned.";
- }catch(e){$("judgeMsg").textContent="Could not simulate: "+e.message}
- finally{$("judge").disabled=false}
+  const r=await fetch("/api/judge",{
+   method:"POST",
+   headers:{"Content-Type":"application/json"},
+   body:JSON.stringify({
+    category,
+    rules,
+    team1Name:n1,
+    team2Name:n2,
+    team1:state.p1,
+    team2:state.p2
+   })
+  });
+
+  const raw=await r.text();
+  let data;
+  try{data=JSON.parse(raw)}catch{throw new Error(raw||`Server error (${r.status})`)}
+  if(!r.ok)throw new Error(data.error||`Judging failed (${r.status})`);
+
+  const lines=[
+   `${n1}: ${data.team1Probability}% • ${n2}: ${data.team2Probability}%`,
+   "",
+   `Projected winner: ${data.winner}`,
+   "",
+   data.explanation||"",
+   "",
+   `${n1} strength: ${data.team1Strength||"N/A"}`,
+   `${n1} weakness: ${data.team1Weakness||"N/A"}`,
+   `${n2} strength: ${data.team2Strength||"N/A"}`,
+   `${n2} weakness: ${data.team2Weakness||"N/A"}`,
+   "",
+   `Key matchup: ${data.keyMatchup||"N/A"}`,
+   `Best pick: ${data.bestPick||"N/A"}`,
+   `Best value: ${data.bestValue||"N/A"}`,
+   `Biggest overpay: ${data.biggestOverpay||"None"}`,
+   "",
+   `Verdict: ${data.verdict||""}`
+  ];
+  $("judgeResult").textContent=lines.join("\n");
+  $("judgeMsg").textContent="AI matchup simulation complete.";
+ }catch(e){
+  $("judgeMsg").textContent="Could not judge matchup: "+e.message;
+ }finally{
+  $("judge").disabled=false;
+  $("judge").textContent="⚖️ Simulate Winner";
+ }
 };
 
 $("undo").onclick=()=>{if(!snapshots.length){$("draftMsg").textContent="Nothing to undo.";return}state=JSON.parse(snapshots.pop());render();$("draftMsg").textContent="Last action undone."};
