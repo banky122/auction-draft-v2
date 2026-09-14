@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0f1115">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="/manifest.json">
+<title>AI Auction Draft</title>
+<style>
+:root{--bg:#0f1115;--card:#1b1f27;--panel:#14171d;--border:#323947;--text:#f6f7fb;--muted:#a7afbd;--accent:#809dff;--accentbg:#25345f;--good:#6ee7a7}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,-apple-system,sans-serif;padding-bottom:calc(24px + env(safe-area-inset-bottom))}
+main{max-width:760px;margin:auto;padding:calc(16px + env(safe-area-inset-top)) 11px 26px}
+h1{margin:0;font-size:24px}.sub{color:var(--muted);font-size:13px;margin:5px 0 15px}.card{background:var(--card);border:1px solid var(--border);border-radius:17px;padding:13px;margin-top:11px}
+.row{display:flex;gap:9px;flex-wrap:wrap;align-items:end}.grow{flex:1 1 180px}.small{flex:0 1 120px}
+label{display:block;color:var(--muted);font-size:12px;font-weight:650}input,select,button{font:inherit}
+input,select{width:100%;min-height:46px;margin-top:6px;padding:11px 12px;border-radius:12px;border:1px solid var(--border);background:var(--panel);color:var(--text)}
+button{min-height:46px;padding:11px 14px;border-radius:12px;border:1px solid var(--border);background:var(--panel);color:var(--text);font-weight:750;cursor:pointer}
+.primary{background:var(--accentbg);border-color:var(--accent)}.wide{width:100%}.grid2{display:grid;grid-template-columns:1fr 1fr;gap:11px}
+.pill{font-size:11px;border:1px solid var(--border);border-radius:999px;padding:5px 8px;color:var(--muted);white-space:nowrap}
+.titleRow{display:flex;justify-content:space-between;align-items:center;gap:8px}.muted{color:var(--muted)}
+.rosterRow,.histRow{display:flex;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px solid var(--border);font-size:14px}
+.nominee{font-size:25px;font-weight:850;margin-top:7px}.desc{color:var(--muted);line-height:1.45;margin-top:6px;font-size:14px}
+.actions{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:10px}.msg{min-height:20px;color:var(--muted);font-size:13px;margin-top:10px}
+.good{color:var(--good)}.hide{display:none}.count{font-size:12px;color:var(--muted)}
+@media(max-width:560px){.grid2{grid-template-columns:1fr}.nominee{font-size:22px}}
+</style>
+</head>
+<body><main>
+<h1>🏆 AI Auction Draft</h1>
+<div class="sub">Enter any category. The app creates the draft pool and runs the nominations for you.</div>
+
+<section class="card">
+  <div class="row">
+    <label class="grow">Draft category
+      <input id="category" placeholder="e.g. All-Time Sitcoms" value="All-Time Sitcoms">
+    </label>
+    <label class="small">Pool size
+      <input id="poolSize" type="number" min="12" max="80" value="35">
+    </label>
+  </div>
+  <div class="row" style="margin-top:9px">
+    <label class="grow">Extra rules / eligibility
+      <input id="rules" placeholder="e.g. Live-action only, any era">
+    </label>
+  </div>
+  <button id="generate" class="primary wide" style="margin-top:10px">✨ Generate Draft Pool</button>
+  <div id="generateMsg" class="msg"></div>
+</section>
+
+<section class="card">
+ <div class="row">
+  <label class="grow">Player 1<input id="p1name" value="Bankole"></label>
+  <label class="grow">Player 2<input id="p2name" value="Max"></label>
+  <label class="small">Budget<input id="budget" type="number" min="0" step="0.5" value="25"></label>
+  <label class="small">Roster<input id="rosterSize" type="number" min="1" max="20" value="5"></label>
+ </div>
+</section>
+
+<section class="grid2">
+ <div class="card"><div class="titleRow"><strong id="p1title">Bankole</strong><span id="p1status" class="pill"></span></div><div id="p1roster"></div></div>
+ <div class="card"><div class="titleRow"><strong id="p2title">Max</strong><span id="p2status" class="pill"></span></div><div id="p2roster"></div></div>
+</section>
+
+<section class="card">
+ <div class="titleRow"><strong>Nomination <span id="nominationNo">#1</span></strong><span id="poolCount" class="count">No pool generated</span></div>
+ <div id="emptyNominee" class="muted" style="margin-top:12px">Generate a pool to begin.</div>
+ <div id="nominationBox" class="hide">
+   <div id="nominee" class="nominee"></div>
+   <div id="desc" class="desc"></div>
+   <div class="row" style="margin-top:12px">
+    <label class="grow">Winner<select id="winner"><option value="p1">Bankole</option><option value="p2">Max</option></select></label>
+    <label class="small">Winning bid<input id="bid" type="number" min="0" step="0.5" value="0"></label>
+   </div>
+   <div class="actions"><button id="award" class="primary">Award Pick</button><button id="skip">Skip</button></div>
+ </div>
+ <div id="draftMsg" class="msg"></div>
+</section>
+
+<section class="card">
+ <div class="titleRow"><div><strong>Draft History</strong><div class="muted" style="font-size:12px">Saved on this device.</div></div><button id="undo">Undo</button></div>
+ <div id="history"></div>
+</section>
+
+<section class="card">
+ <button id="reset" class="wide">Reset Entire Draft</button>
+</section>
+
+<script>
+const KEY="aiAuctionDraft_v2";
+let state={p1:[],p2:[],history:[],pool:[],poolIndex:0,nomination:1,category:"",rules:""};
+let snapshots=[];
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
+const money=n=>"$"+(Number.isInteger(Number(n))?Number(n).toFixed(0):Number(n).toFixed(2).replace(/0+$/,"").replace(/\.$/,""));
+const budget=()=>Math.max(0,Number($("budget").value)||0);
+const rosterSize=()=>Math.max(1,Number($("rosterSize").value)||5);
+const spent=p=>state[p].reduce((s,x)=>s+Number(x.cost),0);
+const remain=p=>Math.max(0,budget()-spent(p));
+function snapshot(){snapshots.push(JSON.stringify(state));if(snapshots.length>100)snapshots.shift()}
+function save(){localStorage.setItem(KEY,JSON.stringify(state))}
+function current(){return state.pool[state.poolIndex]||null}
+function nextNomination(){state.poolIndex++;state.nomination++}
+function renderRoster(p,id,status){
+ let el=$(id); el.innerHTML=state[p].length?state[p].map((x,i)=>`<div class="rosterRow"><span>${i+1}. ${esc(x.name)}</span><span class="pill">${money(x.cost)}</span></div>`).join(""):'<div class="muted" style="font-size:13px;margin-top:10px">No picks yet.</div>';
+ $(status).textContent=`${money(remain(p))} left • ${state[p].length}/${rosterSize()}`;
+}
+function render(){
+ $("p1title").textContent=$("p1name").value||"Player 1"; $("p2title").textContent=$("p2name").value||"Player 2";
+ $("winner").options[0].textContent=$("p1name").value||"Player 1"; $("winner").options[1].textContent=$("p2name").value||"Player 2";
+ $("nominationNo").textContent="#"+state.nomination;
+ renderRoster("p1","p1roster","p1status");renderRoster("p2","p2roster","p2status");
+ const c=current();
+ if(c){$("emptyNominee").classList.add("hide");$("nominationBox").classList.remove("hide");$("nominee").textContent=c.name;$("desc").textContent=c.description||"";}
+ else{$("emptyNominee").classList.remove("hide");$("nominationBox").classList.add("hide");$("emptyNominee").textContent=state.pool.length?"Draft pool exhausted.":"Generate a pool to begin."}
+ $("poolCount").textContent=state.pool.length?`${Math.max(0,state.pool.length-state.poolIndex)} nominees remaining`:"No pool generated";
+ $("history").innerHTML=state.history.length?state.history.slice().reverse().map(h=>`<div class="histRow"><span>${esc(h)}</span></div>`).join(""):'<div class="muted" style="font-size:13px;margin-top:10px">No activity yet.</div>';
+ save();
+}
+$("generate").onclick=async()=>{
+ const category=$("category").value.trim(), rules=$("rules").value.trim(), count=Math.max(12,Math.min(80,Number($("poolSize").value)||35));
+ if(!category){$("generateMsg").textContent="Enter a category first.";return}
+ $("generate").disabled=true;$("generate").textContent="Generating…";$("generateMsg").textContent="Creating a balanced, mixed-order pool…";
+ try{
+  const r=await fetch("/api/generate",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({category,rules,count})});
+  const data=await r.json();
+  if(!r.ok) throw new Error(data.error||"Generation failed");
+  snapshot();state.pool=data.items;state.poolIndex=0;state.nomination=1;state.category=category;state.rules=rules;state.p1=[];state.p2=[];state.history=[];
+  $("generateMsg").textContent=`Generated ${data.items.length} nominees for ${category}.`;render();
+ }catch(e){$("generateMsg").textContent="Could not generate: "+e.message}
+ finally{$("generate").disabled=false;$("generate").textContent="✨ Generate Draft Pool"}
+};
+$("award").onclick=()=>{
+ const c=current(),p=$("winner").value,bid=Math.max(0,Number($("bid").value)||0);
+ if(!c)return;if(state[p].length>=rosterSize()){$("draftMsg").textContent="That roster is already full.";return}
+ if(bid>remain(p)){$("draftMsg").textContent=`Maximum bid is ${money(remain(p))}.`;return}
+ snapshot();const who=p==="p1"?($("p1name").value||"Player 1"):($("p2name").value||"Player 2");
+ state[p].push({name:c.name,cost:bid});state.history.push(`${who}: ${c.name} for ${money(bid)}`);$("draftMsg").textContent=`${c.name} → ${who} for ${money(bid)}`;$("bid").value=0;nextNomination();render();
+};
+$("skip").onclick=()=>{const c=current();if(!c)return;snapshot();state.history.push(`Skipped: ${c.name}`);$("draftMsg").textContent=`Skipped ${c.name}`;nextNomination();render()};
+$("undo").onclick=()=>{if(!snapshots.length){$("draftMsg").textContent="Nothing to undo.";return}state=JSON.parse(snapshots.pop());render();$("draftMsg").textContent="Last action undone."};
+$("reset").onclick=()=>{if(!confirm("Reset the entire draft?"))return;state={p1:[],p2:[],history:[],pool:[],poolIndex:0,nomination:1,category:"",rules:""};snapshots=[];render()};
+["p1name","p2name","budget","rosterSize"].forEach(id=>$(id).addEventListener("input",render));
+try{const saved=localStorage.getItem(KEY);if(saved)state={...state,...JSON.parse(saved)}}catch{}
+render();
+if("serviceWorker"in navigator)window.addEventListener("load",()=>navigator.serviceWorker.register("/sw.js").catch(()=>{}));
+</script>
+</main></body></html>
