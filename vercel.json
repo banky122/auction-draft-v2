@@ -6,6 +6,9 @@
     },
     "api/judge.js": {
       "maxDuration": 300
+    },
+    "api/validate.js": {
+      "maxDuration": 30
     }
   }
 }

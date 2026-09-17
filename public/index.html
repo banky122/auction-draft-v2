@@ -134,7 +134,7 @@ button.primary{background:var(--accentbg);border-color:var(--accent)}button:disa
 <section class="card"><button id="reset" class="wide">Reset Entire Draft</button></section>
 
 <script>
-const KEY="aiAuctionDraftSimulator_v6";
+const KEY="aiAuctionDraftSimulator_v7";
 let state={
  p1:[],p2:[],history:[],pool:[],poolIndex:0,nomination:1,
  auction:{active:false,currentBid:0,leader:null,playerPassed:false,cpuPassed:false}
@@ -213,9 +213,15 @@ $("generate").onclick=async()=>{
  const category=$("category").value.trim(),rules="";
  const target=25;
  if(!category){$("generateMsg").textContent="Enter a category first.";return}
- $("generate").disabled=true;$("generate").textContent="Generating…";
- $("generateMsg").textContent=`Generating 0/${target} nominees…`;
+ $("generate").disabled=true;$("generate").textContent="Checking category…";
+ $("generateMsg").textContent="Checking that this is a valid draft category…";
  try{
+  const vr=await fetch("/api/validate",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({category})});
+  const vraw=await vr.text();let validation;try{validation=JSON.parse(vraw)}catch{throw new Error(vraw||`Validation error (${vr.status})`)}
+  if(!vr.ok)throw new Error(validation.error||`Validation failed (${vr.status})`);
+  if(!validation.valid){$("generateMsg").textContent=validation.reason||"That doesn't look like a valid draft category. Try an established category with at least 25 recognizable options.";return;}
+  $("generate").textContent="Generating…";
+  $("generateMsg").textContent=`Generating 0/${target} nominees…`;
   const all=[];
   let attempts=0;
   while(all.length<target && attempts<12){
